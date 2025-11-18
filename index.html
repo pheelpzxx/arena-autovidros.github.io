@@ -125,7 +125,7 @@
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
     }
 
@@ -138,14 +138,14 @@
     }
 
     .metric-label {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--gray);
       margin-bottom: 8px;
     }
 
     .metric-value {
       font-family: 'Montserrat', sans-serif;
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       font-weight: 700;
     }
 
@@ -156,8 +156,50 @@
     .date-display {
       text-align: center;
       font-size: 1.4rem;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       color: var(--gold);
+    }
+
+    .logged-user {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--gray);
+      margin-bottom: 20px;
+    }
+
+    /* Modal de Login */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+      background: var(--bg-darker);
+      margin: 10% auto;
+      padding: 30px;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      text-align: center;
+      border: 1px solid rgba(255,215,0,0.2);
+      box-shadow: 0 0 30px rgba(255,215,0,0.1);
+    }
+
+    .modal h2 {
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .modal select {
+      width: 100%;
+      padding: 14px;
+      margin: 15px 0;
+      font-size: 1.1rem;
     }
 
     @media (max-width: 600px) {
@@ -168,10 +210,28 @@
 </head>
 <body>
 
-  <div class="container">
+  <!-- Modal de Login -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <h2><i class="fas fa-user"></i> Identifique-se</h2>
+      <p>Selecione o motorista responsável por esta sessão:</p>
+      <select id="motorista-select" required>
+        <option value="">— Escolha um motorista —</option>
+        <option value="Carlos Silva">Carlos Silva</option>
+        <option value="André Costa">André Costa</option>
+        <option value="Ricardo Mendes">Ricardo Mendes</option>
+        <option value="Fernanda Lima">Fernanda Lima</option>
+        <option value="João Alves">João Alves</option>
+        <!-- Adicione mais conforme necessário -->
+      </select>
+      <button id="login-btn" class="btn"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+    </div>
+  </div>
+
+  <div class="container" id="main-content" style="display:none;">
     <header>
       <h1><i class="fas fa-undo-alt"></i> Centro de Devolução</h1>
-      <p>Arena Autovidros — Excelência em cada entrega e controle</p>
+      <p class="logged-user">👤 <span id="nome-motorista">—</span> | Arena Autovidros</p>
     </header>
 
     <!-- Abas -->
@@ -254,25 +314,15 @@
           <div class="metric-value percent" id="taxa-ocupacao">94,3%</div>
         </div>
       </div>
+
+      <div style="text-align:center; margin-top:30px;">
+        <button id="export-btn" class="btn"><i class="fas fa-file-csv"></i> Exportar Relatório (CSV)</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // Ativar abas
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        // Remover ativo
-        document.querySelectorAll('.tab-btn, .tab-content').forEach(el => {
-          el.classList.remove('active');
-        });
-        // Ativar selecionado
-        const tabId = btn.dataset.tab;
-        btn.classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-      });
-    });
-
-    // Dados simulados (substitua depois por lógica real)
+    // === DADOS BASE ===
     const dadosHoje = {
       data: '18/nov/2025',
       pedidos: 42,
@@ -281,11 +331,50 @@
       valorTransportado: 124500.00,
       devolvidos: 0,
       valorDevolvido: 0.00,
-      taxaEntrega: 100, // %
-      taxaOcupacao: 94.3 // %
+      taxaEntrega: 100,
+      taxaOcupacao: 94.3
     };
 
-    // Carregar dashboard inicial
+    let motoristaAtivo = null;
+
+    // === LOGIN ===
+    const loginModal = document.getElementById('loginModal');
+    const mainContent = document.getElementById('main-content');
+    const motoristaSelect = document.getElementById('motorista-select');
+    const loginBtn = document.getElementById('login-btn');
+    const nomeMotoristaSpan = document.getElementById('nome-motorista');
+
+    // Mostrar modal ao carregar
+    window.onload = () => {
+      loginModal.style.display = 'block';
+    };
+
+    loginBtn.addEventListener('click', () => {
+      const nome = motoristaSelect.value;
+      if (!nome) {
+        alert('⚠️ Por favor, selecione um motorista.');
+        return;
+      }
+      motoristaAtivo = nome;
+      nomeMotoristaSpan.textContent = nome;
+      loginModal.style.display = 'none';
+      mainContent.style.display = 'block';
+      atualizarDashboard();
+    });
+
+    // === ABAS ===
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn, .tab-content').forEach(el => {
+          el.classList.remove('active');
+        });
+        const tabId = btn.dataset.tab;
+        btn.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+
+    // === DASHBOARD ===
     function atualizarDashboard() {
       const d = dadosHoje;
       document.getElementById('data-atual').textContent = d.data;
@@ -301,37 +390,68 @@
       document.getElementById('taxa-ocupacao').textContent = d.taxaOcupacao + '%';
     }
 
-    atualizarDashboard();
-
-    // Salvar devolução
+    // === REGISTRO DE DEVOLUÇÃO ===
     document.getElementById('devolucao-form').addEventListener('submit', function(e) {
       e.preventDefault();
 
+      if (!motoristaAtivo) {
+        alert('⚠️ Você precisa estar logado como motorista.');
+        loginModal.style.display = 'block';
+        return;
+      }
+
       const devolucao = {
+        data: new Date().toLocaleDateString('pt-BR'),
+        hora: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+        motorista: motoristaAtivo,
         pedido: document.getElementById('pedido').value,
         item: document.getElementById('item').value,
         motivo: document.getElementById('motivo').value,
-        preco: parseFloat(document.getElementById('preco').value),
-        data: new Date().toISOString().split('T')[0]
+        preco: parseFloat(document.getElementById('preco').value)
       };
 
-      // Carregar devoluções salvas
-      let devolucoes = JSON.parse(localStorage.getItem('devolucoes') || '[]');
-      
-      // Adicionar nova
+      let devolucoes = JSON.parse(localStorage.getItem('devolucoes_arena') || '[]');
       devolucoes.push(devolucao);
-      localStorage.setItem('devolucoes', JSON.stringify(devolucoes));
+      localStorage.setItem('devolucoes_arena', JSON.stringify(devolucoes));
 
       // Atualizar contadores
       dadosHoje.devolvidos += 1;
       dadosHoje.valorDevolvido += devolucao.preco;
-      dadosHoje.taxaEntrega = Math.round((1 - dadosHoje.devolvidos / dadosHoje.pedidos) * 1000) / 10; // 1 casa decimal
+      dadosHoje.taxaEntrega = Math.max(0, Math.round((1 - dadosHoje.devolvidos / dadosHoje.pedidos) * 1000) / 10);
 
       atualizarDashboard();
-
-      // Limpar formulário
       this.reset();
-      alert('✅ Devolução registrada com sucesso!');
+      alert('✅ Devolução registrada por ' + motoristaAtivo + '!');
+    });
+
+    // === EXPORTAR CSV ===
+    document.getElementById('export-btn').addEventListener('click', () => {
+      const devolucoes = JSON.parse(localStorage.getItem('devolucoes_arena') || '[]');
+      if (devolucoes.length === 0) {
+        alert('⚠️ Nenhuma devolução registrada ainda.');
+        return;
+      }
+
+      // Cabeçalho CSV
+      let csv = 'Data,Hora,Motorista,Pedido,Item,Motivo,Preço (R$)\n';
+
+      // Linhas
+      devolucoes.forEach(d => {
+        csv += `"${d.data}","${d.hora}","${d.motorista}","${d.pedido}","${d.item}","${d.motivo}",${d.preco}\n`;
+      });
+
+      // Criar blob e download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `devolucoes_arena_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
     });
   </script>
 
