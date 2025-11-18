@@ -167,7 +167,49 @@
       margin-bottom: 20px;
     }
 
-    /* Modal de Login */
+    .search-box {
+      margin-bottom: 16px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 16px;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255,215,0,0.3);
+      background: rgba(20,20,40,0.7);
+      color: white;
+    }
+
+    .search-input::placeholder {
+      color: #777;
+    }
+
+    .search-results {
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(20,20,40,0.7);
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 4px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .search-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255,215,0,0.1);
+    }
+
+    .search-item:hover {
+      background: rgba(255,215,0,0.1);
+    }
+
+    .search-item strong { color: var(--gold); }
+
+    .loading { color: var(--gold); font-style: italic; }
+    .error { color: #f87171; }
+
     .modal {
       display: none;
       position: fixed;
@@ -201,11 +243,6 @@
       margin: 15px 0;
       font-size: 1.1rem;
     }
-
-    @media (max-width: 600px) {
-      .dashboard-grid { grid-template-columns: 1fr; }
-      h1 { font-size: 1.8rem; }
-    }
   </style>
 </head>
 <body>
@@ -217,14 +254,23 @@
       <p>Selecione o motorista responsável por esta sessão:</p>
       <select id="motorista-select" required>
         <option value="">— Escolha um motorista —</option>
-        <option value="Carlos Silva">Carlos Silva</option>
-        <option value="André Costa">André Costa</option>
-        <option value="Ricardo Mendes">Ricardo Mendes</option>
-        <option value="Fernanda Lima">Fernanda Lima</option>
-        <option value="João Alves">João Alves</option>
-        <!-- Adicione mais conforme necessário -->
+        <option value="ANANIAS MEDEIROS OLIVEIRA">ANANIAS MEDEIROS OLIVEIRA</option>
+        <option value="ANDRE SANTANA MENESES">ANDRE SANTANA MENESES</option>
+        <option value="ARIEL RODRIGUES DOS SANTOS">ARIEL RODRIGUES DOS SANTOS</option>
+        <option value="BRUNO MOREIRA DO AMARANTE">BRUNO MOREIRA DO AMARANTE</option>
+        <option value="DEIVID APARECIDO DE OLIVEIRA LEMOS">DEIVID APARECIDO DE OLIVEIRA LEMOS</option>
+        <option value="DENIS MAKI SAITO">DENIS MAKI SAITO</option>
+        <option value="DIOGO GOMES DA SILVA">DIOGO GOMES DA SILVA</option>
+        <option value="EDUARDO CAMPOS DA SILVA">EDUARDO CAMPOS DA SILVA</option>
+        <option value="JHONATA RAMOS DE SANTANA">JHONATA RAMOS DE SANTANA</option>
+        <option value="LEANDRO LIMA DA SILVA">LEANDRO LIMA DA SILVA</option>
+        <option value="RENATO CASSIANO DOS SANTOS">RENATO CASSIANO DOS SANTOS</option>
+        <option value="WILSON ALVES DA SILVA">WILSON ALVES DA SILVA</option>
+        <option value="ZEINER SARRA FERNANDES">ZEINER SARRA FERNANDES</option>
       </select>
       <button id="login-btn" class="btn"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+      <p class="loading" id="loading-init" style="display:none;">⏳ Carregando base de itens...</p>
+      <p class="error" id="error-init" style="display:none;"></p>
     </div>
   </div>
 
@@ -234,7 +280,6 @@
       <p class="logged-user">👤 <span id="nome-motorista">—</span> | Arena Autovidros</p>
     </header>
 
-    <!-- Abas -->
     <div class="tabs">
       <button class="tab-btn active" data-tab="registro">Registrar Devolução</button>
       <button class="tab-btn" data-tab="dashboard">Visão Geral</button>
@@ -249,25 +294,29 @@
         </div>
 
         <div class="form-group">
-          <label for="item"><i class="fas fa-box"></i> Item devolvido</label>
-          <input type="text" id="item" required placeholder="Ex: VID-TRASEIRO-FOX">
+          <label for="item-search"><i class="fas fa-search"></i> Buscar item (código ou descrição)</label>
+          <input type="text" id="item-search" class="search-input" placeholder="Ex: 14975 ou 'BORRACHA VW SANTANA'">
+          <div id="search-results" class="search-results"></div>
+          <input type="hidden" id="item-codigo" />
+          <input type="hidden" id="item-desc" />
+        </div>
+
+        <div class="form-group">
+          <label for="preco"><i class="fas fa-tag"></i> Preço do item (R$)</label>
+          <input type="text" id="preco" readonly placeholder="Selecione um item acima">
         </div>
 
         <div class="form-group">
           <label for="motivo"><i class="fas fa-exclamation-triangle"></i> Motivo da devolução</label>
           <select id="motivo" required>
             <option value="">— Selecione —</option>
-            <option value="avariado">Item avariado</option>
-            <option value="extraviado">Item extraviado</option>
-            <option value="erro_carregamento">Erro de carregamento</option>
-            <option value="cliente">Solicitação do cliente</option>
+            <option value="avariado">Item Quebrado</option>
+            <option value="extraviado">Item com risco</option>
+            <option value="erro_carregamento">Garantia</option>
+            <option value="cliente">Cliente cancelou</option>
+            <option value="cliente">Clinte não fez o pedido</option>
             <option value="outro">Outro</option>
           </select>
-        </div>
-
-        <div class="form-group">
-          <label for="preco"><i class="fas fa-tag"></i> Preço do item (R$)</label>
-          <input type="number" id="preco" step="0.01" min="0" required placeholder="Ex: 450.90">
         </div>
 
         <button type="submit" class="btn"><i class="fas fa-save"></i> Registrar Devolução</button>
@@ -322,44 +371,141 @@
   </div>
 
   <script>
-    // === DADOS BASE ===
-    const dadosHoje = {
-      data: '18/nov/2025',
-      pedidos: 42,
-      viagens: 8,
-      pb: '12.850',
-      valorTransportado: 124500.00,
-      devolvidos: 0,
-      valorDevolvido: 0.00,
-      taxaEntrega: 100,
-      taxaOcupacao: 94.3
-    };
+    // 🔑 CONFIGURE AQUI O CAMINHO DO SEU CSV (depois de subir no GitHub)
+    // Ex: 'https://arena-autovidros.github.io/base_itens.csv'
+    const URL_BASE_ITENS = 'base_itens.csv'; // ← Mude para URL pública após upload
 
     let motoristaAtivo = null;
+    let itensCache = [];
+
+    // === UTILS ===
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      const data = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        // Suporte a vírgulas dentro de aspas
+        const fields = [];
+        let inQuotes = false;
+        let field = '';
+        for (let j = 0; j < line.length; j++) {
+          const c = line[j];
+          if (c === '"') {
+            inQuotes = !inQuotes;
+          } else if (c === ',' && !inQuotes) {
+            fields.push(field.trim());
+            field = '';
+          } else {
+            field += c;
+          }
+        }
+        fields.push(field.trim());
+        if (fields.length === headers.length) {
+          const obj = {};
+          headers.forEach((h, idx) => {
+            let val = fields[idx];
+            if (h === 'preco') {
+              val = parseFloat(val.replace(/[^0-9.-]/g, ''));
+              if (isNaN(val)) val = 0;
+            }
+            obj[h] = val;
+          });
+          data.push(obj);
+        }
+      }
+      return data;
+    }
+
+    async function carregarItens() {
+      try {
+        const res = await fetch(URL_BASE_ITENS);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        itensCache = parseCSV(text);
+        console.log(`✅ ${itensCache.length} itens carregados.`);
+      } catch (err) {
+        console.error('Erro ao carregar base de itens:', err);
+        document.getElementById('error-init').textContent = 'Falha ao carregar base de itens. Verifique o link.';
+        document.getElementById('error-init').style.display = 'block';
+        throw err;
+      }
+    }
+
+    function buscarItens(termo) {
+      termo = termo.toLowerCase();
+      return itensCache.filter(item =>
+        item.codigo.toString().toLowerCase().includes(termo) ||
+        item.descricao.toLowerCase().includes(termo)
+      ).slice(0, 15);
+    }
+
+    function mostrarResultados(itens) {
+      const container = document.getElementById('search-results');
+      if (itens.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      container.innerHTML = itens.map(item => 
+        `<div class="search-item" data-codigo="${item.codigo}" data-preco="${item.preco}">
+          <strong>${item.codigo}</strong> — ${item.descricao}
+          <div style="font-size:0.85rem; color:#aaa;">${item.marca} • R$ ${item.preco.toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+        </div>`
+      ).join('');
+      container.style.display = 'block';
+
+      container.querySelectorAll('.search-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.getElementById('item-codigo').value = el.dataset.codigo;
+          document.getElementById('item-desc').value = el.textContent.split('—')[1]?.trim() || '';
+          document.getElementById('preco').value = 
+            'R$ ' + parseFloat(el.dataset.preco).toLocaleString('pt-BR', {minimumFractionDigits:2});
+          document.getElementById('item-search').value = el.querySelector('strong').textContent + ' — ' + el.querySelector('strong').nextSibling.textContent.trim();
+          container.style.display = 'none';
+        });
+      });
+    }
 
     // === LOGIN ===
-    const loginModal = document.getElementById('loginModal');
-    const mainContent = document.getElementById('main-content');
-    const motoristaSelect = document.getElementById('motorista-select');
-    const loginBtn = document.getElementById('login-btn');
-    const nomeMotoristaSpan = document.getElementById('nome-motorista');
-
-    // Mostrar modal ao carregar
     window.onload = () => {
-      loginModal.style.display = 'block';
+      const loading = document.getElementById('loading-init');
+      loading.style.display = 'block';
+      carregarItens()
+        .then(() => {
+          loading.style.display = 'none';
+          document.getElementById('loginModal').style.display = 'block';
+        })
+        .catch(() => loading.style.display = 'none');
     };
 
-    loginBtn.addEventListener('click', () => {
-      const nome = motoristaSelect.value;
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const nome = document.getElementById('motorista-select').value;
       if (!nome) {
-        alert('⚠️ Por favor, selecione um motorista.');
+        alert('⚠️ Selecione um motorista.');
         return;
       }
       motoristaAtivo = nome;
-      nomeMotoristaSpan.textContent = nome;
-      loginModal.style.display = 'none';
-      mainContent.style.display = 'block';
-      atualizarDashboard();
+      document.getElementById('nome-motorista').textContent = nome;
+      document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('main-content').style.display = 'block';
+    });
+
+    // === BUSCA DINÂMICA ===
+    document.getElementById('item-search').addEventListener('input', function() {
+      const termo = this.value;
+      if (termo.length < 2) {
+        document.getElementById('search-results').style.display = 'none';
+        return;
+      }
+      const resultados = buscarItens(termo);
+      mostrarResultados(resultados);
+    });
+
+    // Fechar resultados ao clicar fora
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.form-group')) {
+        document.getElementById('search-results').style.display = 'none';
+      }
     });
 
     // === ABAS ===
@@ -374,78 +520,63 @@
       });
     });
 
-    // === DASHBOARD ===
-    function atualizarDashboard() {
-      const d = dadosHoje;
-      document.getElementById('data-atual').textContent = d.data;
-      document.getElementById('pedidos').textContent = d.pedidos;
-      document.getElementById('viagens').textContent = d.viagens;
-      document.getElementById('pb').textContent = d.pb;
-      document.getElementById('valor-transportado').textContent = 
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(d.valorTransportado);
-      document.getElementById('devolvidos').textContent = d.devolvidos;
-      document.getElementById('valor-devolvido').textContent = 
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(d.valorDevolvido);
-      document.getElementById('taxa-entrega').textContent = d.taxaEntrega + '%';
-      document.getElementById('taxa-ocupacao').textContent = d.taxaOcupacao + '%';
-    }
-
-    // === REGISTRO DE DEVOLUÇÃO ===
+    // === REGISTRO ===
     document.getElementById('devolucao-form').addEventListener('submit', function(e) {
       e.preventDefault();
-
       if (!motoristaAtivo) {
-        alert('⚠️ Você precisa estar logado como motorista.');
-        loginModal.style.display = 'block';
+        document.getElementById('loginModal').style.display = 'block';
         return;
       }
 
+      const codigo = document.getElementById('item-codigo').value;
+      const precoBruto = document.getElementById('preco').value;
+      if (!codigo || !precoBruto) {
+        alert('⚠️ Selecione um item válido.');
+        return;
+      }
+
+      const preco = parseFloat(precoBruto.replace(/[^0-9.]/g, ''));
+
       const devolucao = {
-        data: new Date().toLocaleDateString('pt-BR'),
+         new Date().toLocaleDateString('pt-BR'),
         hora: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
         motorista: motoristaAtivo,
         pedido: document.getElementById('pedido').value,
-        item: document.getElementById('item').value,
+        item_codigo: codigo,
+        item_descricao: document.getElementById('item-desc').value,
         motivo: document.getElementById('motivo').value,
-        preco: parseFloat(document.getElementById('preco').value)
+        preco: preco
       };
 
       let devolucoes = JSON.parse(localStorage.getItem('devolucoes_arena') || '[]');
       devolucoes.push(devolucao);
       localStorage.setItem('devolucoes_arena', JSON.stringify(devolucoes));
 
-      // Atualizar contadores
-      dadosHoje.devolvidos += 1;
-      dadosHoje.valorDevolvido += devolucao.preco;
-      dadosHoje.taxaEntrega = Math.max(0, Math.round((1 - dadosHoje.devolvidos / dadosHoje.pedidos) * 1000) / 10);
-
-      atualizarDashboard();
+      alert(`✅ Devolução registrada por ${motoristaAtivo}!\nItem: ${codigo}\nValor: R$ ${preco.toFixed(2)}`);
       this.reset();
-      alert('✅ Devolução registrada por ' + motoristaAtivo + '!');
+      document.getElementById('preco').value = '';
+      document.getElementById('item-codigo').value = '';
+      document.getElementById('item-desc').value = '';
     });
 
-    // === EXPORTAR CSV ===
+    // === EXPORTAR ===
     document.getElementById('export-btn').addEventListener('click', () => {
       const devolucoes = JSON.parse(localStorage.getItem('devolucoes_arena') || '[]');
       if (devolucoes.length === 0) {
-        alert('⚠️ Nenhuma devolução registrada ainda.');
+        alert('⚠️ Nenhuma devolução registrada.');
         return;
       }
 
-      // Cabeçalho CSV
-      let csv = 'Data,Hora,Motorista,Pedido,Item,Motivo,Preço (R$)\n';
-
-      // Linhas
+      let csv = 'Data,Hora,Motorista,Pedido,Código,Item,Motivo,Preço (R$)\n';
       devolucoes.forEach(d => {
-        csv += `"${d.data}","${d.hora}","${d.motorista}","${d.pedido}","${d.item}","${d.motivo}",${d.preco}\n`;
+        csv += `"${d.data}","${d.hora}","${d.motorista}","${d.pedido}","${d.item_codigo}","${d.item_descricao.replace(/"/g, '""')}","${d.motivo}",${d.preco}\n`;
       });
 
-      // Criar blob e download
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `devolucoes_arena_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '')}.csv`;
+      a.download = `devolucoes_arena_${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
