@@ -310,12 +310,12 @@
           <label for="motivo"><i class="fas fa-exclamation-triangle"></i> Motivo da devolução</label>
           <select id="motivo" required>
             <option value="">— Selecione —</option>
-            <option value="avariado">Item Quebrado</option>
-            <option value="extraviado">Item com risco</option>
-            <option value="erro_carregamento">Garantia</option>
-            <option value="cliente">Cliente cancelou</option>
-            <option value="cliente">Clinte não fez o pedido</option>
-            <option value="outro">Outro</option>
+            <option value="vidro_com_risco">Vidro com risco</option>
+            <option value="vendedora_mandou_errado">Vendedora mandou errado</option>
+            <option value="vidro_quebrou_durante_trajeto">Vidro quebrou durante o trajeto</option>
+            <option value="cliente_cancelou">Cliente cancelou</option>
+            <option value="vidro_com_defeito">Vidro com defeito</option>
+            <option value="cliente_recusou_item">Cliente recusou o item</option>
           </select>
         </div>
 
@@ -371,21 +371,17 @@
   </div>
 
   <script>
-    // 🔑 CONFIGURE AQUI O CAMINHO DO SEU CSV (depois de subir no GitHub)
-    // Ex: 'https://arena-autovidros.github.io/base_itens.csv'
-    const URL_BASE_ITENS = 'base_itens.csv'; // ← Mude para URL pública após upload
+    const URL_BASE_ITENS = 'https://arena-autovidros.github.io/base_itens.csv';
 
     let motoristaAtivo = null;
     let itensCache = [];
 
-    // === UTILS ===
     function parseCSV(text) {
       const lines = text.trim().split('\n');
       const headers = lines[0].split(',').map(h => h.trim());
       const data = [];
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
-        // Suporte a vírgulas dentro de aspas
         const fields = [];
         let inQuotes = false;
         let field = '';
@@ -405,13 +401,22 @@
           const obj = {};
           headers.forEach((h, idx) => {
             let val = fields[idx];
-            if (h === 'preco') {
-              val = parseFloat(val.replace(/[^0-9.-]/g, ''));
+            if (h === 'Venda') {
+              val = parseFloat(val.replace(/[^\d.-]/g, ''));
               if (isNaN(val)) val = 0;
             }
             obj[h] = val;
           });
-          data.push(obj);
+          if (obj['Código Interno']) {
+            data.push({
+              codigo: obj['Código Interno'],
+              descricao: obj['Descrição do Produto'],
+              marca: obj['Marca'],
+              grupo: obj['Grupo'],
+              subgrupo: obj['SubGrupo'],
+              preco: obj['Venda']
+            });
+          }
         }
       }
       return data;
@@ -423,10 +428,9 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         itensCache = parseCSV(text);
-        console.log(`✅ ${itensCache.length} itens carregados.`);
       } catch (err) {
         console.error('Erro ao carregar base de itens:', err);
-        document.getElementById('error-init').textContent = 'Falha ao carregar base de itens. Verifique o link.';
+        document.getElementById('error-init').textContent = '❌ Falha ao carregar base de itens. Verifique o link.';
         document.getElementById('error-init').style.display = 'block';
         throw err;
       }
@@ -466,7 +470,6 @@
       });
     }
 
-    // === LOGIN ===
     window.onload = () => {
       const loading = document.getElementById('loading-init');
       loading.style.display = 'block';
@@ -490,7 +493,6 @@
       document.getElementById('main-content').style.display = 'block';
     });
 
-    // === BUSCA DINÂMICA ===
     document.getElementById('item-search').addEventListener('input', function() {
       const termo = this.value;
       if (termo.length < 2) {
@@ -501,14 +503,12 @@
       mostrarResultados(resultados);
     });
 
-    // Fechar resultados ao clicar fora
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.form-group')) {
         document.getElementById('search-results').style.display = 'none';
       }
     });
 
-    // === ABAS ===
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn, .tab-content').forEach(el => {
@@ -520,7 +520,6 @@
       });
     });
 
-    // === REGISTRO ===
     document.getElementById('devolucao-form').addEventListener('submit', function(e) {
       e.preventDefault();
       if (!motoristaAtivo) {
@@ -559,7 +558,6 @@
       document.getElementById('item-desc').value = '';
     });
 
-    // === EXPORTAR ===
     document.getElementById('export-btn').addEventListener('click', () => {
       const devolucoes = JSON.parse(localStorage.getItem('devolucoes_arena') || '[]');
       if (devolucoes.length === 0) {
